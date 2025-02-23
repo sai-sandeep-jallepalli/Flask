@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template
 import pickle
 import os
+import pandas as pd
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), "../templates"))
 
@@ -25,23 +26,34 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    features = []
-    for column in column_names:
-        if column in label_encoders:
-            value = request.form.get(column, "missing")
-            try:
-                features.append(label_encoders[column].transform([value])[0])
-            except ValueError:
-                return render_template('index.html', prediction="Invalid input for column: " + column)
-        else:
-            value = request.form.get(column, 0)  # Default value for missing numeric fields
-            try:
-                features.append(float(value))
-            except ValueError:
-                return render_template('index.html', prediction="Invalid numeric input for column: " + column)
+    try:
+        # Create a dictionary to store user inputs
+        input_data = {}
 
-    prediction = model.predict([features])[0]
-    return render_template('predict.html', prediction=f'Prediction: {"Survived" if prediction == 1 else "Did not survive"}')
+        for column in column_names:
+            if column in label_encoders:
+                value = request.form.get(column, "missing")
+                try:
+                    input_data[column] = label_encoders[column].transform([value])[0]  # Transform categorical data
+                except ValueError:
+                    return render_template('index.html', prediction=f"Invalid input for column: {column}")
+            else:
+                value = request.form.get(column, 0)  # Default value for missing numeric fields
+                try:
+                    input_data[column] = float(value)  # Convert to float
+                except ValueError:
+                    return render_template('index.html', prediction=f"Invalid numeric input for column: {column}")
+
+        # Convert input dictionary to DataFrame with exact feature names
+        features_df = pd.DataFrame([input_data], columns=column_names)
+
+        # Make prediction
+        prediction = model.predict(features_df)[0]
+
+        return render_template('predict.html', prediction=f'Prediction: {"Survived" if prediction == 1 else "Did not survive"}')
+
+    except Exception as e:
+        return render_template('index.html', prediction=f'Error: {str(e)}')
 
 if __name__ == "__main__":
     app.run(debug=True)
