@@ -5,7 +5,6 @@ from sklearn.preprocessing import LabelEncoder
 import pickle
 import os
 
-
 base_path = os.path.abspath(os.path.dirname(__file__))
 dataset_path = os.path.join(base_path, "../datasets/titanic-dataset.csv")
 model_path = os.path.join(base_path, "../pickle-models/train.pkl")
@@ -28,7 +27,7 @@ for col in categorical_columns:
     le = LabelEncoder()
     data[col] = le.fit_transform(data[col].astype(str))
     label_encoders[col] = le
-    
+
 # Save label encoders
 with open(encoders_path, 'wb') as file:
     pickle.dump(label_encoders, file)
@@ -40,7 +39,7 @@ y = data['Survived']
 # Save feature column names
 with open(column_names_path, 'wb') as file:
     pickle.dump(X.columns.tolist(), file)
-    
+
 # Train/test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
